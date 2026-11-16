@@ -7,7 +7,7 @@ from scratch in Rust.
 ![Airbend's curve editor with Quiet and Performance profiles](docs/screenshots/curves.png)
 
 <details>
-<summary>More screenshots: calibration, NVIDIA fans, and Omarchy themes</summary>
+<summary>More screenshots: calibration, NVIDIA fans, Omarchy themes, and the tray plugin</summary>
 
 Fan controls, renaming, and a completed calibration:
 
@@ -21,9 +21,14 @@ Follow Omarchy or use the built-in Dark theme:
 
 ![Theme settings following Omarchy's Last Horizon theme](docs/screenshots/omarchy-theme.png)
 
+The native Omarchy tray plugin, with profile switching and live fan and temperature readings:
+
+<img src="docs/screenshots/omarchy-tray.png" alt="Airbend's Omarchy tray plugin showing Quiet and Performance profiles, five fan speeds, and temperatures" width="360">
+
 </details>
 
-Screenshots use the app's built-in demo scenes with simulated readings.
+Desktop app screenshots use the built-in demo scenes with simulated readings. The tray
+screenshot shows the installed Omarchy plugin with live readings.
 
 ## Layout
 
