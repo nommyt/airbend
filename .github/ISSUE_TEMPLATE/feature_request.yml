@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a feature or hardware integration.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include any relevant hardware, driver, or desktop requirements.
+    validations:
+      required: true

@@ -1,0 +1,25 @@
+name: Bug report
+description: Report incorrect behavior in Airbend or its Omarchy integration.
+body:
+  - type: markdown
+    attributes:
+      value: For security vulnerabilities, follow SECURITY.md instead of posting publicly. Remove private paths, identifiers, and credentials from logs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include what you expected and steps to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Airbend version, distribution, kernel, motherboard/GPU model, driver, and desktop or Omarchy version.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs and screenshots
+      description: Include relevant daemon warnings or journal output. State whether the behavior occurs with the simulated backend.

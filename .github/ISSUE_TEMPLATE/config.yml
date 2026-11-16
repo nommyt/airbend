@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/nommyt/airbend/discussions
+    about: Use Discussions for setup questions and open-ended ideas.
+  - name: Security reporting
+    url: https://github.com/nommyt/airbend/blob/main/SECURITY.md
+    about: Report vulnerabilities privately using the security policy.
