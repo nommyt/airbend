@@ -8,8 +8,10 @@ pub mod calibrate;
 pub mod config;
 pub mod engine;
 pub mod model;
+pub mod profile;
 
 pub use calibrate::Calibration;
 pub use config::{Config, ControlConfig, Curve, CurveKind, MixOp, Point};
 pub use engine::{Engine, TickOutput};
 pub use model::{ControlInfo, SensorInfo, SensorKind};
+pub use profile::{Profile, ProfileId};

@@ -6,7 +6,7 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::time::Duration;
 
-use airbend_core::Config;
+use airbend_core::{Config, ProfileId};
 use airbend_ipc::{Client, Snapshot};
 use rune::Waker;
 
@@ -16,6 +16,7 @@ pub enum Cmd {
     Save(Config),
     Calibrate(String),
     CancelCalibration(String),
+    SelectProfile(ProfileId),
 }
 
 pub enum Msg {
@@ -25,6 +26,7 @@ pub enum Msg {
     Saved(Config, u64),
     SaveFailed(String),
     Notice(bool, String),
+    ProfileSelected(Result<(Config, u64), String>),
 }
 
 pub fn spawn(socket: PathBuf, waker: Waker) -> (Sender<Cmd>, Receiver<Msg>) {
@@ -49,6 +51,9 @@ pub fn spawn(socket: PathBuf, waker: Waker) -> (Sender<Cmd>, Receiver<Msg>) {
                         match cmd_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(Cmd::Save(_)) => {
                                 send(Msg::SaveFailed("not connected to airbendd".into()));
+                            }
+                            Ok(Cmd::SelectProfile(_)) => {
+                                send(Msg::ProfileSelected(Err("not connected to airbendd".into())));
                             }
                             Ok(_) => {
                                 send(Msg::Notice(false, "not connected to airbendd".into()));
@@ -92,6 +97,12 @@ pub fn spawn(socket: PathBuf, waker: Waker) -> (Sender<Cmd>, Receiver<Msg>) {
                             if let Err(e) = client.cancel_calibration(&id) {
                                 send(Msg::Notice(false, format!("{e:#}")));
                             }
+                        }
+                        Ok(Cmd::SelectProfile(profile)) => {
+                            let result = client.select_profile(profile).and_then(|_| client.config())
+                                .map_err(|e| format!("{e:#}"));
+                            if let Ok((_, rev)) = &result { revision = *rev; }
+                            send(Msg::ProfileSelected(result));
                         }
                         Err(RecvTimeoutError::Timeout) => {}
                         Err(RecvTimeoutError::Disconnected) => return Ok(()),

@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use airbend_core::calibrate::Progress;
 use airbend_core::engine::CurveValue;
-use airbend_core::{Config, ControlInfo, SensorInfo};
+use airbend_core::{Config, ControlInfo, SensorInfo, ProfileId};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +41,7 @@ pub enum Request {
     GetConfig,
     /// Replace the whole config. The daemon validates, saves and applies it.
     SetConfig { config: Config },
+    SelectProfile { profile: ProfileId },
     /// Run a calibration on one output. The result lands in the config's `calibrations`.
     Calibrate { control: String },
     CancelCalibration { control: String },
@@ -142,6 +143,13 @@ impl Client {
 
     pub fn calibrate(&mut self, control: &str) -> Result<()> {
         self.call(&Request::Calibrate { control: control.into() }).map(drop)
+    }
+
+    pub fn select_profile(&mut self, profile: ProfileId) -> Result<u64> {
+        match self.call(&Request::SelectProfile { profile })? {
+            Response::Ok { revision } => Ok(revision),
+            r => bail!("unexpected response {r:?}"),
+        }
     }
 
     pub fn cancel_calibration(&mut self, control: &str) -> Result<()> {

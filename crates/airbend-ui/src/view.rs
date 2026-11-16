@@ -32,6 +32,20 @@ pub fn view(s: &Ui, _cx: &mut Cx<Ui>) -> El {
         Page::Settings => settings_page(s, &k),
     };
     let mut content = col().w_full().padding(24.0).gap(16.0);
+    let labels = ["Quiet", "Performance"];
+    content = content.child(row().w_full().gap(12.0).items_center().justify_between()
+        .child(col().gap(3.0)
+            .child(text(format!("{} profile", s.config.active_profile.label())).font(SECTION).color(k.c.text_base))
+            .child(text(if s.draft.active_profile != s.config.active_profile {
+                format!("Editing your retained {} draft", s.draft.active_profile.label())
+            } else if s.dirty() { "Apply or revert edits before switching profiles".into() }
+            else { "Curves and fan settings are saved separately for each profile".into() })
+                .font(k.ty.small).color(k.c.text_muted).wrap()))
+        .child(SegmentedControl::new(&labels, Some(if s.config.active_profile == airbend_core::ProfileId::Quiet { 0 } else { 1 }))
+            .label("Cooling profile").width(Some(240.0))
+            .on_pick(|s: &mut Ui, i: usize, _: &mut Tx| s.select_profile(airbend_core::ProfileId::ALL[i]))
+            .build(&k).disabled((s.dirty() && s.draft.active_profile == s.config.active_profile) || s.saving || s.switching_profile || s.conn != Conn::Connected || !s.snapshot.calibrating.is_empty())
+            .key("profile-picker")));
     if let Conn::Failed(e) = &s.conn {
         content = content.child(banner(&k, e));
     }

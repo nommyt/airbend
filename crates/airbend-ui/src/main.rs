@@ -12,7 +12,7 @@ mod worker;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
-use airbend_core::Config;
+use airbend_core::{Config, ProfileId};
 use airbend_ipc::Snapshot;
 use rune::{AppSpec, TextEdit, Tx, Waker};
 
@@ -56,6 +56,7 @@ pub struct Ui {
     pub drag_point: Option<usize>,
     pub notice: Option<(bool, String)>,
     pub saving: bool,
+    pub switching_profile: bool,
     /// Demo data from a scene: ignore the daemon.
     pub demo: bool,
     pub prefs: Prefs,
@@ -82,6 +83,7 @@ impl Ui {
             drag_point: None,
             notice: None,
             saving: false,
+            switching_profile: false,
             demo: false,
             prefs: Prefs::load(),
             omarchy: theme::load_omarchy(),
@@ -119,6 +121,40 @@ impl Ui {
         self.notice = None;
         if self.selected_curve.as_ref().is_some_and(|id| self.draft.curve(id).is_none()) {
             self.selected_curve = None;
+        }
+    }
+
+    pub fn select_profile(&mut self, profile: ProfileId) {
+        if self.conn != Conn::Connected || !self.snapshot.calibrating.is_empty() { return; }
+        let returning_to_draft = self.draft.active_profile != self.config.active_profile && profile == self.draft.active_profile;
+        if (self.dirty() && !returning_to_draft) || self.saving || self.switching_profile {
+            self.notice = Some((false, "Apply or revert edits before switching profiles".into()));
+            return;
+        }
+        if self.demo {
+            if let Err(e) = self.config.select_profile(profile) {
+                self.notice = Some((false, format!("{e:#}")));
+            } else { self.draft = self.config.clone(); }
+        } else if let Some(tx) = &self.cmds {
+            self.switching_profile = tx.send(worker::Cmd::SelectProfile(profile)).is_ok();
+        }
+    }
+
+    fn receive_config(&mut self, cfg: Config, rev: u64) {
+        let was_clean = !self.dirty();
+        let changed_profile = self.config.active_profile != cfg.active_profile;
+        self.draft.calibrations = cfg.calibrations.clone();
+        self.draft.profiles = cfg.profiles.clone();
+        let untouched = was_clean || self.draft == cfg;
+        self.config = cfg;
+        self.revision = rev;
+        if untouched {
+            self.draft = self.config.clone();
+        } else if changed_profile && self.draft.active_profile != self.config.active_profile {
+            self.notice = Some((false, format!("{} is active; your {} draft is kept. Switch back to apply it, or Revert.",
+                self.config.active_profile.label(), self.draft.active_profile.label())));
+        } else if changed_profile {
+            self.notice = Some((true, "Your retained draft can now be applied".into()));
         }
     }
 
@@ -288,22 +324,13 @@ fn poll(s: &mut Ui, t: f64, tx: &mut Tx) -> bool {
             worker::Msg::Conn(c) => s.conn = c,
             worker::Msg::State(snap) => s.snapshot = snap,
             worker::Msg::Config(cfg, rev) => {
-                let was_clean = !s.dirty();
-                // Calibrations belong to the daemon: always take its copy, so applying a
-                // draft never drops a result that arrived while editing.
-                s.draft.calibrations = cfg.calibrations.clone();
-                // Keep local edits unless they already match what the daemon now runs.
-                let untouched = was_clean || s.draft == cfg;
-                s.config = cfg;
-                s.revision = rev;
-                if untouched {
-                    s.draft = s.config.clone();
-                }
+                s.receive_config(cfg, rev);
             }
             worker::Msg::Saved(cfg, rev) => {
                 s.saving = false;
                 s.revision = rev;
                 s.draft.calibrations = cfg.calibrations.clone();
+                s.draft.profiles = cfg.profiles.clone();
                 s.config = cfg;
                 s.notice = Some((true, "Applied".into()));
             }
@@ -312,6 +339,13 @@ fn poll(s: &mut Ui, t: f64, tx: &mut Tx) -> bool {
                 s.notice = Some((false, e));
             }
             worker::Msg::Notice(ok, text) => s.notice = Some((ok, text)),
+            worker::Msg::ProfileSelected(result) => {
+                s.switching_profile = false;
+                match result {
+                    Ok((cfg, rev)) => s.receive_config(cfg, rev),
+                    Err(e) => s.notice = Some((false, e)),
+                }
+            }
         }
     }
     true
@@ -444,6 +478,40 @@ mod tests {
         rt.pointer_down(x, y); rt.pointer_up(x, y);
         settle(&mut rt);
         assert_eq!(rt.state.draft.control(id).unwrap().manual, Some(30.0));
+    }
+
+    #[test]
+    fn profile_picker_switches_independent_settings_without_dirtying_the_draft() {
+        let mut rt = runtime("controls");
+        let original = rt.state.draft.curves.clone();
+        let (x, y) = rt.find("profile-picker").unwrap();
+        rt.pointer_down(x + 60.0, y); rt.pointer_up(x + 60.0, y); settle(&mut rt);
+        assert_eq!(rt.state.config.active_profile, ProfileId::Performance);
+        assert_ne!(rt.state.draft.curves, original);
+        assert!(!rt.state.dirty());
+        rt.state.select_profile(ProfileId::Quiet);
+        assert_eq!(rt.state.draft.curves, original);
+        rt.state.draft.control_mut("hwmon:it8689@it87.2624/pwm1").min_percent = 35.0;
+        rt.state.select_profile(ProfileId::Performance);
+        assert_eq!(rt.state.config.active_profile, ProfileId::Quiet, "unsaved edits block a different profile");
+    }
+
+    #[test]
+    fn external_profile_changes_retain_edits_and_allow_returning_to_their_profile() {
+        let mut rt = runtime("controls");
+        rt.state.config.initialize_profiles(); rt.state.draft = rt.state.config.clone();
+        rt.state.draft.labels.insert("fan".into(), "My cooler".into());
+        let mut remote = rt.state.config.clone(); remote.select_profile(ProfileId::Performance).unwrap();
+        rt.state.receive_config(remote, 2);
+        assert_eq!(rt.state.config.active_profile, ProfileId::Performance);
+        assert_eq!(rt.state.draft.active_profile, ProfileId::Quiet);
+        assert_eq!(rt.state.draft.labels["fan"], "My cooler");
+        // Demo selection normally adopts its result; exercise the same incoming
+        // config path as a real daemon switching back, preserving the dirty draft.
+        let mut remote = rt.state.config.clone(); remote.select_profile(ProfileId::Quiet).unwrap();
+        rt.state.receive_config(remote, 3);
+        assert_eq!(rt.state.draft.labels["fan"], "My cooler");
+        rt.state.revert(); assert!(!rt.state.dirty());
     }
 
     fn settle(rt: &mut Runtime<Ui>) {

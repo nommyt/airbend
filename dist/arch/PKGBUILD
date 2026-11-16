@@ -1,16 +1,17 @@
 # Local package: builds the airbend checkout this PKGBUILD lives in (dist/arch/ → repo root).
 # makepkg -si
 pkgname=airbend
-pkgver=0.1.0
-pkgrel=5
+pkgver=0.2.0
+pkgrel=1
 pkgdesc="Fan control with curves, calibration and a native GPU-rendered UI"
 arch=('x86_64')
 license=('MIT')
 # Cargo's release profile omits debuginfo, so no separate debug package is needed.
 options=('!debug')
 depends=('gcc-libs' 'glibc' 'libxkbcommon' 'wayland' 'vulkan-icd-loader')
-makedepends=('cargo')
+makedepends=('cargo' 'nodejs')
 optdepends=('lm_sensors: sensors-detect, to find the Super I/O driver your board needs'
+            'omarchy: tray plugin host and installation commands'
             'nvidia-utils: NVIDIA GPU temperature, fan RPM and fan control through NVML'
             'it87-dkms-git: fan control on Gigabyte boards with newer ITE chips')
 install=airbend.install
@@ -25,17 +26,28 @@ build() {
 check() {
   cd "$(_root)"
   cargo test --release --locked --workspace
+  node --test dist/omarchy/tests/model.test.cjs
 }
 
 package() {
   cd "$(_root)"
   install -Dm755 target/release/airbendd "$pkgdir/usr/bin/airbendd"
   install -Dm755 target/release/airbend "$pkgdir/usr/bin/airbend"
+  install -Dm755 target/release/airbendctl "$pkgdir/usr/bin/airbendctl"
+  install -Dm755 dist/airbend-omarchy-install "$pkgdir/usr/bin/airbend-omarchy-install"
+  install -dm755 "$pkgdir/usr/share/airbend/omarchy-plugin/i18n"
+  install -Dm644 dist/omarchy/manifest.json "$pkgdir/usr/share/airbend/omarchy-plugin/manifest.json"
+  install -Dm644 dist/omarchy/Panel.qml "$pkgdir/usr/share/airbend/omarchy-plugin/Panel.qml"
+  install -Dm644 dist/omarchy/PlainText.qml "$pkgdir/usr/share/airbend/omarchy-plugin/PlainText.qml"
+  install -Dm644 dist/omarchy/Model.js "$pkgdir/usr/share/airbend/omarchy-plugin/Model.js"
+  install -Dm644 dist/omarchy/i18n/en.json "$pkgdir/usr/share/airbend/omarchy-plugin/i18n/en.json"
   install -Dm644 dist/airbendd.service "$pkgdir/usr/lib/systemd/system/airbendd.service"
   install -Dm644 dist/airbend.desktop "$pkgdir/usr/share/applications/airbend.desktop"
   install -Dm644 dist/airbend.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/airbend.svg"
   install -Dm644 dist/config.example.toml "$pkgdir/usr/share/doc/airbend/config.example.toml"
   install -Dm644 README.md "$pkgdir/usr/share/doc/airbend/README.md"
+  install -Dm644 FEATURES.md "$pkgdir/usr/share/doc/airbend/FEATURES.md"
+  install -Dm644 dist/omarchy/README.md "$pkgdir/usr/share/airbend/omarchy-plugin/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/airbend/LICENSE"
   install -dm755 "$pkgdir/etc/airbend"
 }

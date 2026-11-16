@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "airbend.panel",
+  "name": "Airbend",
+  "version": "0.2.0",
+  "author": "Airbend",
+  "license": "MIT",
+  "description": "Cooling profiles, fan speeds and temperature status in the Omarchy tray.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "Panel.qml"},
+  "barWidget": {
+    "displayName": "Airbend",
+    "description": "Switch Quiet and Performance profiles and open the fan controller.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "tray",
+    "defaults": {"refreshIntervalSec": 3, "socketPath": "/run/airbend/airbend.sock"},
+    "schema": [
+      {"key": "refreshIntervalSec", "type": "integer", "label": "Refresh interval (seconds)", "min": 1, "max": 60, "defaultValue": 3},
+      {"key": "socketPath", "type": "string", "label": "Daemon socket", "defaultValue": "/run/airbend/airbend.sock"}
+    ]
+  }
+}

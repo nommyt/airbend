@@ -1,6 +1,26 @@
 # Airbend features
 
-Current Linux MVP: application version 0.1.0, Arch package release 0.1.0-5.
+Current Linux MVP: application version 0.2.0, Arch package release 0.2.0-1.
+
+## Profiles and Omarchy tray
+
+- Quiet and Performance store independent curves, fan assignments, and per-fan tuning.
+- Existing configurations become Quiet without changing their cooling behavior. Performance
+  starts from the same setup with curve demand raised by 15 percentage points, capped at
+  100%, faster response, immediate ramp-up, and stop-below-minimum disabled. Manual overrides
+  and user limits remain in effect. Both profiles can then be edited independently.
+- Switch profiles in the desktop app, through `airbendctl profile quiet|performance`, or in
+  the Omarchy plugin. Selection is persisted by the daemon and restored at boot.
+- Labels and calibration results are shared between profiles. Switches are blocked while
+  calibration is running. A stale draft from another active profile cannot overwrite it.
+- Unsaved desktop edits are retained if the tray switches profiles. Switch back to apply
+  them, or use Revert to load the currently running profile.
+- Install the native `airbend.panel` QML widget into Omarchy's tray drawer with
+  `airbend-omarchy-install`. The widget offers Quiet/Performance selection, fan RPM/duty,
+  temperatures, connection errors, refresh, keyboard navigation, and Open Airbend.
+- The plugin follows Omarchy's theme and language and uses its shared panel components.
+  It remains available when the desktop window is closed; it talks to the daemon locally
+  through `airbendctl`, without a separate tray process or a network service.
 
 ## Hardware and monitoring
 
@@ -110,7 +130,7 @@ Current Linux MVP: application version 0.1.0, Arch package release 0.1.0-5.
   unused outputs, curve editing, sensors, and disconnection.
 - Supports headless screenshots and UI-tree inspection in debug builds. Rune's optional
   `tooling` feature is required for these commands in release builds.
-- Includes 50 automated tests covering the engine, configuration, calibration, recovery,
+- Includes Rust and plugin regression tests covering profiles, the engine, configuration, calibration, recovery,
   NVIDIA safety/limits, IPC, and interactions with the actual UI components.
 - Uses a Rust workspace with separate core, hardware, IPC, daemon, and UI crates; the Rune
   revision and Cargo dependencies are pinned for reproducible dependency selection.
@@ -118,7 +138,7 @@ Current Linux MVP: application version 0.1.0, Arch package release 0.1.0-5.
 
 ## Current scope
 
-Linux is implemented. Windows support, profiles, a tray item, and a general sensor/controller
+Linux is implemented. Windows support, a cross-desktop tray item, and a general sensor/controller
 plugin API remain on the roadmap. Hardware discovery happens when the daemon starts; loading
 a new driver or changing the available devices can require restarting the daemon. Fan control
 depends on the hardware and driver exposing a supported interface, and RPM availability can

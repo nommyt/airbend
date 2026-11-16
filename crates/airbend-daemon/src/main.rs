@@ -125,7 +125,10 @@ fn run(args: Args) -> Result<()> {
         return Ok(());
     }
 
-    let config = load_config(&args.config)?;
+    let mut config = load_config(&args.config)?;
+    if config.initialize_profiles() {
+        save_config(&args.config, &config)?;
+    }
     let opts = airbend_hw::Options {
         mock: args.mock,
         restore_file: (!args.mock).then(|| args.restore_file.clone()),
@@ -449,19 +452,41 @@ fn handle(req: Request, shared: &Mutex<Shared>) -> Response {
             Response::Config { config: s.config.clone(), revision: s.revision }
         }
         Request::SetConfig { mut config } => {
-            if let Err(e) = config.validate() {
-                return Response::Error { message: format!("invalid config: {e:#}") };
-            }
             let mut s = shared.lock().unwrap();
+            if config.active_profile != s.config.active_profile {
+                return Response::Error { message: format!("{} is now active. Switch back to {} to apply this draft, or Revert to load the active profile.",
+                    s.config.active_profile.label(), config.active_profile.label()) };
+            }
             // Results are daemon-owned. A client may still be editing the draft from
             // before a calibration completed, or may not have fetched it yet.
             config.calibrations = s.config.calibrations.clone();
+            // Inactive profiles belong to the daemon, just like calibration
+            // results. Saving one profile cannot overwrite another's settings.
+            config.profiles = s.config.profiles.clone();
+            config.initialize_profiles();
+            config.save_active_profile();
+            if let Err(e) = config.validate() {
+                return Response::Error { message: format!("invalid config: {e:#}") };
+            }
             if let Err(e) = save_config(&s.config_path, &config) {
                 return Response::Error { message: format!("saving config: {e:#}") };
             }
             s.config = config;
             s.revision += 1;
             info!("config updated to revision {}", s.revision);
+            Response::Ok { revision: s.revision }
+        }
+        Request::SelectProfile { profile } => {
+            let mut s = shared.lock().unwrap();
+            if s.active_calibration.is_some() {
+                return Response::Error { message: "finish or cancel calibration before switching profiles".into() };
+            }
+            let mut config = s.config.clone();
+            if let Err(e) = config.select_profile(profile).and_then(|()| save_config(&s.config_path, &config)) {
+                return Response::Error { message: format!("switching profile: {e:#}") };
+            }
+            s.config = config;
+            s.revision += 1;
             Response::Ok { revision: s.revision }
         }
         Request::Calibrate { control } => {
@@ -492,6 +517,29 @@ fn handle(req: Request, shared: &Mutex<Shared>) -> Response {
 mod tests {
     use super::*;
     use airbend_core::{ControlInfo, calibrate::Calibration};
+
+    #[test]
+    fn profile_switch_persists_and_rejects_stale_drafts_and_calibration_switches() {
+        use airbend_core::{ProfileId, Curve, CurveKind};
+        let dir = std::env::temp_dir().join(format!("airbend-profiles-test-{}", std::process::id()));
+        let mut cfg = Config { curves: vec![Curve { id: "flat".into(), name: "Quiet curve".into(), kind: CurveKind::Flat { percent: 30.0 } }], ..Config::default() };
+        cfg.initialize_profiles(); let stale = cfg.clone();
+        let shared = Mutex::new(Shared { config: cfg, revision: 1, snapshot: Snapshot::default(),
+            config_path: dir.join("config.toml"), calibration_requests: vec![], active_calibration: None });
+        assert!(matches!(handle(Request::SelectProfile { profile: ProfileId::Performance }, &shared), Response::Ok { .. }));
+        let saved = load_config(&dir.join("config.toml")).unwrap();
+        assert_eq!(saved.active_profile, ProfileId::Performance);
+        assert!(matches!(saved.curves[0].kind, CurveKind::Flat { percent: 45.0 }));
+        assert!(matches!(handle(Request::SetConfig { config: stale }, &shared), Response::Error { .. }));
+        assert_eq!(load_config(&dir.join("config.toml")).unwrap(), saved);
+        shared.lock().unwrap().active_calibration = Some("fan".into());
+        assert!(matches!(handle(Request::SelectProfile { profile: ProfileId::Quiet }, &shared), Response::Error { .. }));
+        shared.lock().unwrap().active_calibration = None;
+        assert!(matches!(handle(Request::SelectProfile { profile: ProfileId::Quiet }, &shared), Response::Ok { .. }));
+        let saved = load_config(&dir.join("config.toml")).unwrap();
+        assert!(matches!(saved.curves[0].kind, CurveKind::Flat { percent: 30.0 }));
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn a_changing_gpu_fan_cannot_steal_motherboard_calibration_pairing() {

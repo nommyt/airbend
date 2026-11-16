@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+plugin_source=/usr/share/airbend/omarchy-plugin
+config_dir=${XDG_CONFIG_HOME:-$HOME/.config}
+[[ $config_dir == /* ]] || config_dir=$HOME/.config
+plugin_dir=$config_dir/omarchy/plugins/airbend.panel
+omarchy plugin validate "$plugin_source"
+mkdir -p -- "${plugin_dir%/*}"
+if [[ -e $plugin_dir || -L $plugin_dir ]]; then
+  if [[ ! -L $plugin_dir || $(readlink -f -- "$plugin_dir") != "$plugin_source" ]]; then
+    echo "An existing plugin at $plugin_dir would be replaced; leaving it unchanged." >&2
+    exit 1
+  fi
+else
+  ln -s -- "$plugin_source" "$plugin_dir"
+fi
+# Keep an existing customized placement; otherwise place it in the tray drawer.
+if [[ -f $config_dir/omarchy/shell.json ]]; then
+  cp -p -- "$config_dir/omarchy/shell.json" "$config_dir/omarchy/shell.json.bak.airbend.$(date +%s)"
+fi
+omarchy-shell shell rescanPlugins
+# Discovery is asynchronous: wait for the manifest before enabling the widget.
+for attempt in {1..25}; do
+  if omarchy-shell shell listPlugins | jq -e 'any(.[]; .id == "airbend.panel")' >/dev/null; then
+    break
+  fi
+  sleep 0.2
+done
+omarchy plugin enable airbend.panel
+echo "After upgrading a running widget, refresh its code with: omarchy restart shell"

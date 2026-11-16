@@ -1,4 +1,5 @@
 post_install() {
+  echo ":: Add the Omarchy tray plugin: airbend-omarchy-install (run as your user)"
   echo ":: Start the daemon:    sudo systemctl enable --now airbendd"
   echo ":: No fans listed?      sudo sensors-detect, then load the Super I/O driver it names"
 }

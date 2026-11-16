@@ -1,0 +1,23 @@
+{
+  "title": "Airbend",
+  "quiet": "Quiet",
+  "performance": "Performance",
+  "offline": "Daemon unavailable",
+  "tooltip": "Airbend · %1",
+  "profiles": "Cooling profile",
+  "quietDescription": "Your Quiet curves and fan settings.",
+  "performanceDescription": "Higher initial cooling demand and faster response; independently editable.",
+  "calibrating": "Calibration in progress. Finish or cancel it before switching profiles.",
+  "switching": "Switching profile…",
+  "fans": "Fans",
+  "temperatures": "Temperatures",
+  "open": "Open Airbend",
+  "retry": "Refresh",
+  "commandFailed": "Unable to change profile. Check the daemon and socket permissions.",
+  "invalidStatus": "Airbend status could not be read.",
+  "timeout": "The daemon did not respond in time.",
+  "noFans": "No connected fans reported.",
+  "rpm": "%1 RPM",
+  "duty": "%1%",
+  "unknown": "—"
+}

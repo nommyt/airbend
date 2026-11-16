@@ -7,6 +7,7 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::calibrate::Calibration;
+use crate::profile::{Profile, ProfileId};
 
 pub const CONFIG_VERSION: u32 = 1;
 
@@ -20,6 +21,8 @@ pub struct Config {
     pub labels: BTreeMap<String, String>,
     pub curves: Vec<Curve>,
     pub controls: Vec<ControlConfig>,
+    pub active_profile: ProfileId,
+    pub profiles: BTreeMap<ProfileId, Profile>,
     /// Calibration results by control id. Written by the daemon after a calibration run.
     pub calibrations: BTreeMap<String, Calibration>,
 }
@@ -32,6 +35,8 @@ impl Default for Config {
             labels: BTreeMap::new(),
             curves: Vec::new(),
             controls: Vec::new(),
+            active_profile: ProfileId::Quiet,
+            profiles: BTreeMap::new(),
             calibrations: BTreeMap::new(),
         }
     }
@@ -306,6 +311,15 @@ impl Config {
     // `!(a < b)` on purpose: it also rejects NaN, which `a >= b` would let through.
     #[allow(clippy::neg_cmp_op_on_partial_ord)]
     pub fn validate(&self) -> Result<()> {
+        if !self.profiles.is_empty() {
+            if ProfileId::ALL.iter().any(|id| !self.profiles.contains_key(id)) {
+                bail!("Quiet and Performance profiles must both be configured");
+            }
+            for (id, profile) in &self.profiles {
+                Config { curves: profile.curves.clone(), controls: profile.controls.clone(), ..Config::default() }
+                    .validate().with_context(|| format!("{} profile", id.label()))?;
+            }
+        }
         let mut ids = HashSet::new();
         for c in &self.curves {
             if c.id.is_empty() {

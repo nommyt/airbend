@@ -13,12 +13,20 @@ from scratch in Rust.
 | `airbend-ipc` | The daemon ↔ UI protocol: JSON lines over a Unix socket. |
 | `airbend-daemon` | `airbendd`: runs as root, owns the hardware, runs the loop, serves the socket. |
 | `airbend-ui` | `airbend`: the Rune desktop app. Never touches hardware. |
+| `airbend-cli` | `airbendctl`: local status and profile control for scripts and the Omarchy plugin. |
 
 ## Features
 
 See [the complete feature outline](FEATURES.md) for controls, editing, hardware support,
 safety behavior, installation, development tools, and current limitations.
 
+- **Profiles**: Quiet and Performance keep independent curves and fan settings. Quiet starts
+  with your existing setup; Performance starts with demand curves raised by 15 percentage
+  points (capped at 100%) and faster response. Select a profile in the app or Omarchy plugin.
+  Calibration results and labels are shared; the selected profile survives daemon restarts.
+- **Omarchy tray plugin**: native QML widget inside the tray drawer, with profile switching,
+  fan RPM, duty and temperature readings, and Open Airbend. Runs independently of the desktop
+  window and follows Omarchy's theme, language and panel behavior.
 - Curves: graph (drag points), linear, flat, trigger, mix; hysteresis, response time.
 - Per-fan tuning: minimum, stop below minimum, start kick, step up/down, offset, manual override.
 - **Calibration**: per output, finds which tachometer it drives (headers and tach inputs don't
@@ -60,6 +68,10 @@ AIRBEND_SOCKET=/tmp/airbend.sock cargo run -p airbend-ui
 
 ## Install on Arch / Omarchy
 
+The `airbend` Arch package installs the complete app: the `airbendd` daemon and systemd
+service, the `airbend` desktop app with its launcher/icon, `airbendctl`, and the Omarchy
+plugin files and installer.
+
 ```sh
 sudo pacman -S --needed lm_sensors libxkbcommon wayland
 sudo sensors-detect            # finds your Super I/O chip and the driver it needs
@@ -68,6 +80,28 @@ sudo systemctl enable --now airbendd
 ```
 
 Then open airbend from the app launcher. `sudo pacman -R airbend` removes it again.
+
+Add its Omarchy tray widget as your normal user:
+
+```sh
+airbend-omarchy-install
+```
+
+`airbend-omarchy-install` registers and enables the widget for your user. It requires the
+Airbend package to be installed first; it does not install the daemon or desktop app, or
+start the daemon. Installing the plugin folder alone through Omarchy also does not install
+those binaries. The commands above install the package, enable the daemon, and add the widget.
+
+The plugin is `airbend.panel`; disable it with `omarchy plugin disable airbend.panel`.
+The daemon continues controlling fans when the Airbend window is closed.
+
+For scripts and keybindings:
+
+```sh
+airbendctl status --json
+airbendctl profile quiet
+airbendctl profile performance
+```
 
 ### No fans listed?
 
@@ -101,8 +135,17 @@ the `[patch.crates-io]` entries to the same rev (see Rune's root `Cargo.toml`).
 
 ## Roadmap
 
-1. ~~Linux MVP: hwmon, daemon, curve editor~~
-2. ~~Fan calibration, renaming, Omarchy theme following~~
-3. Profiles (quiet / performance), a tray item
-4. Windows: service + named pipe, LibreHardwareMonitor sidecar over PawnIO, NVAPI/ADLX GPUs
-5. Plugin API for extra sensors and controllers (liquidctl AIOs, etc.)
+Completed in 0.2.0:
+
+- [x] Linux hwmon backend, privileged daemon, and native desktop curve editor.
+- [x] Fan calibration, renaming, Dark / Follow Omarchy themes, and hiding unused outputs.
+- [x] NVIDIA temperature monitoring and independent GPU fan control through NVML.
+- [x] Quiet / Performance profiles with independent settings and persistent selection.
+- [x] Native Omarchy tray plugin with profile switching, live readings, and Open Airbend.
+- [x] `airbendctl` for status and profile control, and complete Arch packaging.
+
+Planned:
+
+- [ ] Windows service and named-pipe IPC, LibreHardwareMonitor over PawnIO, and NVAPI/ADLX GPU support.
+- [ ] Plugin API for additional sensors and controllers, including liquidctl AIO integrations.
+- [ ] Cross-desktop tray support beyond the native Omarchy plugin.
