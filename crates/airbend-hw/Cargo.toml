@@ -1,0 +1,16 @@
+[package]
+name = "airbend-hw"
+description = "airbend's hardware backends: Linux hwmon, a mock for development, Windows later."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+airbend-core.workspace = true
+anyhow.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libloading = "0.8"

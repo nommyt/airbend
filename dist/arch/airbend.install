@@ -1,0 +1,12 @@
+post_install() {
+  echo ":: Start the daemon:    sudo systemctl enable --now airbendd"
+  echo ":: No fans listed?      sudo sensors-detect, then load the Super I/O driver it names"
+}
+
+post_upgrade() {
+  systemctl try-restart airbendd.service >/dev/null 2>&1 || true
+}
+
+pre_remove() {
+  systemctl disable --now airbendd.service >/dev/null 2>&1 || true
+}

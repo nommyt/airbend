@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=airbend
+GenericName=Fan Control
+Comment=Fan curves for your CPU, GPU and case fans
+Exec=airbend
+Icon=airbend
+Terminal=false
+Categories=System;Settings;HardwareSettings;
+Keywords=fan;cooling;temperature;pwm;curve;
+StartupWMClass=airbend

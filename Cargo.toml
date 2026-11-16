@@ -1,0 +1,44 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+
+[workspace.dependencies]
+airbend-core = { path = "crates/airbend-core" }
+airbend-hw = { path = "crates/airbend-hw" }
+airbend-ipc = { path = "crates/airbend-ipc" }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+log = "0.4"
+env_logger = "0.11"
+signal-hook = "0.3"
+libc = "0.2"
+
+# Rune is pre-release: pin one `dev` rev and patch every crate its root Cargo.toml patches,
+# at that same rev (Cargo doesn't inherit patches from a dependency).
+rune = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+rune-kit = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+
+[patch.crates-io]
+winit = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+parley_engine = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+wgpu-hal = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+accesskit_windows = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+accesskit_macos = { git = "https://github.com/anomalyco/rune", rev = "55ef5268f22038a95344b3e9d2b4a25ddba731b1" }
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+opt-level = 2
+
+[profile.release]
+lto = "thin"

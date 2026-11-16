@@ -1,0 +1,21 @@
+[package]
+name = "airbend-daemon"
+description = "airbendd: reads sensors, runs curves and drives fans; serves the airbend UI."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "airbendd"
+path = "src/main.rs"
+
+[dependencies]
+airbend-core.workspace = true
+airbend-hw.workspace = true
+airbend-ipc.workspace = true
+anyhow.workspace = true
+log.workspace = true
+env_logger.workspace = true
+serde_json.workspace = true
+signal-hook.workspace = true
+libc.workspace = true

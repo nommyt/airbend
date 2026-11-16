@@ -1,0 +1,41 @@
+# Local package: builds the airbend checkout this PKGBUILD lives in (dist/arch/ → repo root).
+# makepkg -si
+pkgname=airbend
+pkgver=0.1.0
+pkgrel=5
+pkgdesc="Fan control with curves, calibration and a native GPU-rendered UI"
+arch=('x86_64')
+license=('MIT')
+# Cargo's release profile omits debuginfo, so no separate debug package is needed.
+options=('!debug')
+depends=('gcc-libs' 'glibc' 'libxkbcommon' 'wayland' 'vulkan-icd-loader')
+makedepends=('cargo')
+optdepends=('lm_sensors: sensors-detect, to find the Super I/O driver your board needs'
+            'nvidia-utils: NVIDIA GPU temperature, fan RPM and fan control through NVML'
+            'it87-dkms-git: fan control on Gigabyte boards with newer ITE chips')
+install=airbend.install
+
+_root() { realpath "$startdir/../.."; }
+
+build() {
+  cd "$(_root)"
+  cargo build --release --locked
+}
+
+check() {
+  cd "$(_root)"
+  cargo test --release --locked --workspace
+}
+
+package() {
+  cd "$(_root)"
+  install -Dm755 target/release/airbendd "$pkgdir/usr/bin/airbendd"
+  install -Dm755 target/release/airbend "$pkgdir/usr/bin/airbend"
+  install -Dm644 dist/airbendd.service "$pkgdir/usr/lib/systemd/system/airbendd.service"
+  install -Dm644 dist/airbend.desktop "$pkgdir/usr/share/applications/airbend.desktop"
+  install -Dm644 dist/airbend.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/airbend.svg"
+  install -Dm644 dist/config.example.toml "$pkgdir/usr/share/doc/airbend/config.example.toml"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/airbend/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/airbend/LICENSE"
+  install -dm755 "$pkgdir/etc/airbend"
+}

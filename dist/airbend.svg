@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#15161a"/>
+  <g transform="translate(64 64)" fill="#8fb4ff">
+    <path id="b" d="M0-6C-4-24 2-44 22-46C30-30 18-14 0-6Z"/>
+    <use href="#b" transform="rotate(90)"/>
+    <use href="#b" transform="rotate(180)"/>
+    <use href="#b" transform="rotate(270)"/>
+  </g>
+  <circle cx="64" cy="64" r="9" fill="#15161a" stroke="#8fb4ff" stroke-width="4"/>
+</svg>

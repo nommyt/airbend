@@ -1,0 +1,13 @@
+target/
+*.png
+dist/arch/pkg/
+dist/arch/src/
+dist/arch/*.pkg.tar.*
+
+# Local machine notes, credentials, and agent runtime directories.
+/INSTALLATION.md
+/.aws/
+/.codex/
+/.agents/
+.env
+.env.*

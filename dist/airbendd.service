@@ -1,0 +1,35 @@
+[Unit]
+Description=airbend fan control daemon
+Documentation=https://github.com/airbend/airbend
+# Super I/O drivers (it87, nct6775) are usually loaded by systemd-modules-load.
+After=systemd-modules-load.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/airbendd --config /etc/airbend/config.toml --socket /run/airbend/airbend.sock --group wheel
+# Runs after every stop, including a crash or SIGKILL: hands any fan the daemon still held
+# back to the firmware, from the record it wrote when it took them.
+ExecStopPost=/usr/bin/airbendd --restore --restore-file /run/airbend/restore.json
+Restart=on-failure
+RestartSec=2
+
+RuntimeDirectory=airbend
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=restart
+ConfigurationDirectory=airbend
+ReadWritePaths=/etc/airbend /run/airbend
+
+# Hardening. /sys must stay writable: that's where fans are driven.
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

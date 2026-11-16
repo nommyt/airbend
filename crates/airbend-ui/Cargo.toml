@@ -1,0 +1,19 @@
+[package]
+name = "airbend-ui"
+description = "airbend: the desktop app, built with Rune."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "airbend"
+path = "src/main.rs"
+
+[dependencies]
+airbend-core.workspace = true
+airbend-ipc.workspace = true
+anyhow.workspace = true
+rune.workspace = true
+rune-kit.workspace = true
+serde.workspace = true
+toml.workspace = true

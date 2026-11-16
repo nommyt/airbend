@@ -1,0 +1,26 @@
+# /etc/airbend/config.toml — the airbend UI writes this file; hand edits are fine too.
+# Sensor and control ids are listed on the UI's Sensors page (or: airbendd --mock to see the format).
+version = 1
+tick_ms = 1000
+
+[[curves]]
+id = "cpu"
+name = "CPU"
+type = "graph"
+sensor = "hwmon:k10temp@0000:00:18.3/temp1"
+points = [
+  { temp = 30.0, percent = 20.0 },
+  { temp = 50.0, percent = 35.0 },
+  { temp = 65.0, percent = 55.0 },
+  { temp = 75.0, percent = 75.0 },
+  { temp = 85.0, percent = 100.0 },
+]
+tuning = { hysteresis = 2.0, hysteresis_down_only = true, response_time = 2.0 }
+
+[[controls]]
+control = "hwmon:it8689@it87.2624/pwm1"
+enabled = true
+curve = "cpu"
+min_percent = 20.0
+step_up = 10.0
+step_down = 5.0
