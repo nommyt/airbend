@@ -4,6 +4,27 @@ Fan control for Linux: temperature curves for motherboard fans and NVIDIA GPU fa
 native GPU-rendered UI built on [Rune](https://github.com/anomalyco/rune). MIT licensed, written
 from scratch in Rust.
 
+![Airbend's curve editor with Quiet and Performance profiles](docs/screenshots/curves.png)
+
+<details>
+<summary>More screenshots: calibration, NVIDIA fans, and Omarchy themes</summary>
+
+Fan controls, renaming, and a completed calibration:
+
+![Motherboard fan controls with calibration results and tuning](docs/screenshots/controls.png)
+
+Independent NVIDIA GPU fan controls:
+
+![Two NVIDIA GPU fans with driver limits and curve selection](docs/screenshots/nvidia.png)
+
+Follow Omarchy or use the built-in Dark theme:
+
+![Theme settings following Omarchy's Last Horizon theme](docs/screenshots/omarchy-theme.png)
+
+</details>
+
+Screenshots use the app's built-in demo scenes with simulated readings.
+
 ## Layout
 
 | Crate | What it is |
@@ -128,6 +149,17 @@ cargo test --workspace
 # Headless UI renders with demo data (no daemon needed):
 cargo run -p airbend-ui -- --snap curves.png --scene curves   # scenes: controls curves mix sensors dirty disconnected
 cargo run -p airbend-ui -- --tree tree.json --scene controls
+```
+
+The screenshots above are rendered by the app itself. To regenerate them from a debug build
+(the installed release binary omits Rune's screenshot tooling):
+
+```sh
+cargo build -p airbend-ui
+target/debug/airbend --snap docs/screenshots/curves.png --scene curves --size 1200x820 --scale 1.5
+target/debug/airbend --snap docs/screenshots/controls.png --scene calibrated --size 1360x820 --scale 1.5
+target/debug/airbend --snap docs/screenshots/nvidia.png --scene nvidia --size 1200x820 --scale 1.5
+target/debug/airbend --snap docs/screenshots/omarchy-theme.png --scene omarchy --size 1100x600 --scale 1.5
 ```
 
 Rune is pre-release and pinned to one `dev` rev in the root `Cargo.toml`; when bumping it, update

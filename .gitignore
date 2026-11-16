@@ -1,5 +1,6 @@
 target/
 *.png
+!/docs/screenshots/*.png
 dist/arch/pkg/
 dist/arch/src/
 dist/arch/*.pkg.tar.*
